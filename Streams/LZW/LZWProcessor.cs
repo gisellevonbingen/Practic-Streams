@@ -10,8 +10,11 @@ namespace Streams.LZW
     public class LZWProcessor
     {
         public BidirectionalDictionary<int, LZWNode> Table { get; }
+        private readonly int ExtendsKeyOffset;
+
         private LZWNode EncodeBuilder;
         public int LastKey { get; private set; } = -1;
+        public int NextKey { get; private set; } = -1;
 
         public LZWProcessor() : this(0)
         {
@@ -21,6 +24,13 @@ namespace Streams.LZW
         public LZWProcessor(int extendsKeyOffset)
         {
             this.Table = new BidirectionalDictionary<int, LZWNode>();
+            this.ExtendsKeyOffset = extendsKeyOffset;
+            this.ClearTable();
+        }
+
+        public void ClearTable()
+        {
+            this.Table.Clear();
             this.EncodeBuilder = new LZWNode();
 
             for (int i = byte.MinValue; i <= byte.MaxValue; i++)
@@ -28,10 +38,10 @@ namespace Streams.LZW
                 this.Table.Add(i, new LZWNode((byte)i));
             }
 
-            this.NextKey = this.Table.Count + extendsKeyOffset;
+            this.NextKey = this.Table.Count + this.ExtendsKeyOffset;
+            this.LastKey = -1;
         }
 
-        public virtual int NextKey { get; private set; }
 
         /// <summary>
         /// 
