@@ -41,6 +41,12 @@ namespace Streams.LZW
         public int InsertToTable(LZWNode node)
         {
             var key = this.NextKey++;
+
+            if (this.Table.TryGetA(node, out var prevKey) == true)
+            {
+                throw new LZWException($"Already inserted node as key : {prevKey}, insertingKey : {key}");
+            }
+
             this.Table.Add(key, node);
             return key;
         }
