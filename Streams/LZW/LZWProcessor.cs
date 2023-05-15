@@ -73,6 +73,8 @@ namespace Streams.LZW
             if (value <= -1)
             {
                 this.LastKey = -1;
+                this.NextKey++;
+                this.EncodeBuilder = new LZWNode();
                 return lastKey;
             }
             else
