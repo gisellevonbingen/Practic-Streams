@@ -10,21 +10,23 @@ namespace Streams.LZW
     public class LZWProcessor
     {
         public BidirectionalDictionary<int, LZWNode> Table { get; }
-        private readonly int ExtendsKeyOffset;
+        public int MinimumCodeLength { get; private set; }
 
         private LZWNode EncodeBuilder;
+        public int ClearCode { get; private set; } = -1;
+        public int EoiCode { get; private set; } = -1;
         public int LastKey { get; private set; } = -1;
         public int NextKey { get; private set; } = -1;
 
-        public LZWProcessor() : this(0)
+        public LZWProcessor() : this(8)
         {
 
         }
 
-        public LZWProcessor(int extendsKeyOffset)
+        public LZWProcessor(int minimumCodeLength)
         {
+            this.MinimumCodeLength = minimumCodeLength;
             this.Table = new BidirectionalDictionary<int, LZWNode>();
-            this.ExtendsKeyOffset = extendsKeyOffset;
             this.ClearTable();
         }
 
@@ -33,12 +35,16 @@ namespace Streams.LZW
             this.Table.Clear();
             this.EncodeBuilder = new LZWNode();
 
-            for (int i = byte.MinValue; i <= byte.MaxValue; i++)
+            var maxExclusive = 1 << this.MinimumCodeLength;
+
+            for (int i = 0; i < maxExclusive; i++)
             {
                 this.Table.Add(i, new LZWNode((byte)i));
             }
 
-            this.NextKey = this.Table.Count + this.ExtendsKeyOffset;
+            this.ClearCode = maxExclusive + 0;
+            this.EoiCode = maxExclusive + 1;
+            this.NextKey = maxExclusive + 2;
             this.LastKey = -1;
         }
 

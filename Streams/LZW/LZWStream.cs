@@ -11,23 +11,9 @@ namespace Streams.LZW
 {
     public class LZWStream : WrappedByteStream
     {
-        public const int EoiCode = -2;
-
-        public static int GetUsingBits(int value)
-        {
-            if (value < 512)
-            {
-                return 9;
-            }
-            else
-            {
-                return (int)Math.Ceiling(Math.Log2(value));
-            }
-
-        }
-
         protected readonly BitStream BaseBitStream;
         protected readonly CompressionMode Mode;
+        
         public LZWProcessor Processor { get; private set; }
 
         protected int ReadingDataKey { get; private set; } = -1;
@@ -35,6 +21,11 @@ namespace Streams.LZW
         protected int ReadingPosition { get; private set; } = 0;
 
         public LZWStream(Stream baseStream, CompressionMode mode) : this(baseStream, mode, false)
+        {
+
+        }
+
+        public LZWStream(Stream baseStream, CompressionMode mode, LZWProcessor processor) : this(baseStream, mode, processor, false)
         {
 
         }
@@ -49,22 +40,41 @@ namespace Streams.LZW
             this.BaseBitStream = new BitStream(baseStream, leaveOpen);
             this.Mode = mode;
             this.Processor = processor;
+
+            if (mode == CompressionMode.Compress)
+            {
+                this.WriteCode(processor.ClearCode);
+            }
+
         }
 
-        public override bool CanRead => this.BaseStream.CanRead;
+        public override bool CanRead => this.BaseStream.CanRead && this.Mode == CompressionMode.Decompress;
 
         public override bool CanSeek => false;
 
-        public override bool CanWrite => this.BaseStream.CanWrite;
+        public override bool CanWrite => this.BaseStream.CanWrite && this.Mode == CompressionMode.Compress;
 
         public override long Length => throw new NotSupportedException();
 
         public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
+        public void ClearReading()
+        {
+            this.ReadingDataKey = -1;
+            this.ReadingPosition = 0;
+            this.ReadingData = Array.Empty<byte>();
+            this.Processor.ClearTable();
+        }
+
+        protected virtual int GetUsingBits(int key)
+        {
+            return (int)Math.Ceiling(Math.Log2(key + 1));
+        }
+
         protected int ReadCode()
         {
             var nextKey = this.Processor.NextKey;
-            var bits = GetUsingBits(nextKey + 1);
+            var bits = this.GetUsingBits(nextKey + 1);
             var code = 0;
 
             for (var i = 0; i < bits; i++)
@@ -73,7 +83,7 @@ namespace Streams.LZW
 
                 if (b == -1)
                 {
-                    return EoiCode;
+                    return this.Processor.EoiCode;
                 }
 
                 var shift = bits - i - 1;
@@ -86,7 +96,7 @@ namespace Streams.LZW
         protected void WriteCode(int key)
         {
             var nextKey = this.Processor.NextKey;
-            var bits = GetUsingBits(nextKey - 1);
+            var bits = this.GetUsingBits(nextKey - 1);
 
             for (var i = 0; i < bits; i++)
             {
@@ -102,10 +112,18 @@ namespace Streams.LZW
         {
             var code = this.ReadCode();
 
-            if (code == EoiCode)
+            if (code == this.Processor.EoiCode)
             {
                 this.ReadingDataKey = code;
                 return false;
+            }
+            else if (code == this.Processor.ClearCode)
+            {
+                this.Processor.ClearTable();
+                var code2 = this.ReadCode();
+                var key = this.Processor.Decode(code2);
+                this.ReadingDataKey = key;
+                return code2 != this.Processor.EoiCode;
             }
             else
             {
@@ -117,7 +135,11 @@ namespace Streams.LZW
 
         public override int ReadByte()
         {
-            if (this.ReadingPosition >= this.ReadingData.Count)
+            if (this.ReadingDataKey == this.Processor.EoiCode)
+            {
+                return -1;
+            }
+            else if (this.ReadingPosition >= this.ReadingData.Count)
             {
                 if (this.ReadData() == false)
                 {
@@ -140,6 +162,13 @@ namespace Streams.LZW
             this.WriteData(value);
         }
 
+        public void WriteClearCode()
+        {
+            this.WriteData(-1);
+            this.WriteCode(this.Processor.ClearCode);
+            this.Processor.ClearTable();
+        }
+
         protected void WriteData(int value)
         {
             var key = this.Processor.Encode(value);
@@ -157,11 +186,12 @@ namespace Streams.LZW
             if (this.Mode == CompressionMode.Compress)
             {
                 this.WriteData(-1);
-                this.WriteCode(EoiCode);
+                this.WriteCode(this.Processor.EoiCode);
             }
 
             base.Dispose(disposing);
         }
+
     }
 
 }

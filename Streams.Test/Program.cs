@@ -19,7 +19,8 @@ namespace Streams
             {
                 "Hello, World!\r\n안녕하세요!",
                 "BABAABAAA",
-                "AAAAAAABBCCCDEEEEFFFFFFGHIIJ"
+                "AAAAAAABBCCCDEEEEFFFFFFGHIIJ",
+                "000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000,000.000"
             };
 
             foreach (var text in texts)
