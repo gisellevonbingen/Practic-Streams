@@ -31,6 +31,8 @@ namespace Streams.LZW
             this.AddRange(collection);
         }
 
+        public override string ToString() => $"[{string.Join(", ", this.Values)}]";
+
         public void Add(byte value)
         {
             this._Values.Add(value);
@@ -58,7 +60,7 @@ namespace Streams.LZW
             return this.Values.SequenceEqual(other.Values);
         }
 
-        public override bool Equals(object obj) => this.Equals(obj as LZWNode);
+        public override bool Equals(object obj) =>  obj is LZWNode other && this.Equals(other);
 
     }
 

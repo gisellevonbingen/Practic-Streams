@@ -7,27 +7,39 @@ using Streams.Collections;
 
 namespace Streams.LZW
 {
-    public class LZWProcessor
+    /// <summary>
+    /// A variation of the LZW algorithm that uses variable length codes
+    /// </summary>
+    public abstract class AbstractLZWProcessor
     {
         public BidirectionalDictionary<int, LZWNode> Table { get; }
         public int MinimumCodeLength { get; private set; }
+        public int MaximumCodeLength { get; private set; }
 
         private LZWNode EncodeBuilder;
         public int ClearCode { get; private set; } = -1;
         public int EoiCode { get; private set; } = -1;
-        public int LastKey { get; private set; } = -1;
-        public int NextKey { get; private set; } = -1;
+        public int LastCode { get; private set; } = -1;
+        public int NextCode { get; private set; } = -1;
+        public int CodeLength { get; private set; } = -1;
 
-        public LZWProcessor() : this(8)
-        {
-
-        }
-
-        public LZWProcessor(int minimumCodeLength)
+        public AbstractLZWProcessor(int minimumCodeLength, int maximumCodeLength)
         {
             this.MinimumCodeLength = minimumCodeLength;
+            this.MaximumCodeLength = maximumCodeLength;
             this.Table = new BidirectionalDictionary<int, LZWNode>();
             this.ClearTable();
+        }
+
+        public abstract int GetCodeLengthGrowThreashold(bool reading);
+
+        public void GrowCodeLength(bool reading)
+        {
+            while (this.NextCode >= this.GetCodeLengthGrowThreashold(reading))
+            {
+                this.CodeLength++;
+            }
+
         }
 
         public void ClearTable()
@@ -44,8 +56,9 @@ namespace Streams.LZW
 
             this.ClearCode = maxExclusive + 0;
             this.EoiCode = maxExclusive + 1;
-            this.NextKey = maxExclusive + 2;
-            this.LastKey = -1;
+            this.NextCode = maxExclusive + 2;
+            this.LastCode = -1;
+            this.CodeLength = this.MinimumCodeLength;
         }
 
 
@@ -56,15 +69,17 @@ namespace Streams.LZW
         /// <returns>Table Key of Inserted values</returns>
         public int InsertToTable(LZWNode node)
         {
-            var key = this.NextKey++;
-
-            if (this.Table.TryGetA(node, out var prevKey) == true)
+            if (this.Table.TryGetA(node, out var prevKey) == false)
             {
-                throw new LZWException($"Already inserted node as key : {prevKey}, insertingKey : {key}");
+                var key = this.NextCode++;
+                this.Table.Add(key, node);
+                return key;
+            }
+            else
+            {
+                return prevKey;
             }
 
-            this.Table.Add(key, node);
-            return key;
         }
 
         /// <summary>
@@ -74,12 +89,12 @@ namespace Streams.LZW
         /// <returns>Table Key of Inserted value, -1 mean 'Require More Values'</returns>
         public int Encode(int value)
         {
-            var lastKey = this.LastKey;
+            var lastKey = this.LastCode;
 
             if (value <= -1)
             {
-                this.LastKey = -1;
-                this.NextKey++;
+                this.LastCode = -1;
+                this.NextCode++;
                 this.EncodeBuilder = new LZWNode();
                 return lastKey;
             }
@@ -91,7 +106,7 @@ namespace Streams.LZW
 
                 if (this.Table.TryGetA(builder, out var key) == true)
                 {
-                    this.LastKey = key;
+                    this.LastCode = key;
                     return -1;
                 }
                 else
@@ -99,7 +114,7 @@ namespace Streams.LZW
                     this.InsertToTable(builder);
                     this.EncodeBuilder = new LZWNode(byteValue);
 
-                    this.LastKey = value;
+                    this.LastCode = value;
                     return lastKey;
                 }
 
@@ -121,7 +136,7 @@ namespace Streams.LZW
             else
             {
                 var table = this.Table;
-                var lastKey = this.LastKey;
+                var lastKey = this.LastCode;
                 var builder = new LZWNode();
 
                 if (lastKey > -1)
@@ -137,14 +152,14 @@ namespace Streams.LZW
                         this.InsertToTable(builder);
                     }
 
-                    this.LastKey = code;
+                    this.LastCode = code;
                     return code;
                 }
                 else
                 {
                     builder.Add(table[lastKey].Values[0]);
                     var key = this.InsertToTable(builder);
-                    this.LastKey = key;
+                    this.LastCode = key;
                     return key;
                 }
 

@@ -203,14 +203,24 @@ namespace Streams
 
             public override void Compress(Stream input, Stream output)
             {
-                using var bs = new LZWStream(new BitStream(output, BitOrder.BigEndian), CompressionMode.Compress);
+                using var bs = new LZWStream(new BitStream(output, BitOrder.BigEndian), CompressionMode.Compress, new TestLZWPRocessor());
                 input.CopyTo(bs);
             }
 
             public override void Decompress(Stream input, Stream output)
             {
-                using var bs = new LZWStream(new BitStream(input, BitOrder.BigEndian), CompressionMode.Decompress);
+                using var bs = new LZWStream(new BitStream(input, BitOrder.BigEndian), CompressionMode.Decompress, new TestLZWPRocessor());
                 bs.CopyTo(output);
+            }
+
+            public class TestLZWPRocessor : AbstractLZWProcessor
+            {
+                public TestLZWPRocessor() : base(8, 12)
+                {
+
+                }
+
+                public override int GetCodeLengthGrowThreashold(bool reading) => (int)Math.Pow(2, this.CodeLength + 2);
             }
 
         }
