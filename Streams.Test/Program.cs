@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using Streams.Base64;
 using Streams.Huffman;
+using Streams.IO;
 using Streams.LZW;
 
 namespace Streams
@@ -202,13 +203,13 @@ namespace Streams
 
             public override void Compress(Stream input, Stream output)
             {
-                using var bs = new LZWStream(output, CompressionMode.Compress);
+                using var bs = new LZWStream(new BitStream(output, BitOrder.BigEndian), CompressionMode.Compress);
                 input.CopyTo(bs);
             }
 
             public override void Decompress(Stream input, Stream output)
             {
-                using var bs = new LZWStream(input, CompressionMode.Decompress);
+                using var bs = new LZWStream(new BitStream(input, BitOrder.BigEndian), CompressionMode.Decompress);
                 bs.CopyTo(output);
             }
 

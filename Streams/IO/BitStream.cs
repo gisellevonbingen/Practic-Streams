@@ -9,25 +9,47 @@ namespace Streams.IO
 {
     public class BitStream : WrappedByteStream
     {
+        public static int GetBitShift(BitOrder order, int bits, int position)
+        {
+            if (0 > position || position > bits - 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position));
+            }
+            else if (order == BitOrder.BigEndian)
+            {
+                return bits - 1 - position;
+            }
+            else if (order == BitOrder.LittleEndian)
+            {
+                return position;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(order));
+            }
+
+        }
+
         private int ReadingByte = 0;
         private int ReadingPosition = -1;
         private int ReadingLength = 0;
         private int WritingByte = 0;
         private int WritingPosition = 0;
 
+        public BitOrder Order { get; private set; }
         public long InBits { get; protected set; }
         public long InBytes { get; protected set; }
         public long OutBits { get; protected set; }
         public long OutBytes { get; protected set; }
 
-        public BitStream(Stream baseStream) : this(baseStream, false)
+        public BitStream(Stream baseStream, BitOrder order) : this(baseStream, order, false)
         {
 
         }
 
-        public BitStream(Stream baseStream, bool leaveOpen) : base(baseStream, leaveOpen)
+        public BitStream(Stream baseStream, BitOrder order, bool leaveOpen) : base(baseStream, leaveOpen)
         {
-
+            this.Order = order;
         }
 
         protected virtual int ReadEncodedByte(out int length)
@@ -55,6 +77,8 @@ namespace Streams.IO
 
         }
 
+        public int GetBitShift(int positionInByte) => GetBitShift(this.Order, 8, positionInByte);
+
         public int ReadBit()
         {
             if (this.ReadingPosition == -1 || this.ReadingPosition == this.ReadingLength)
@@ -75,7 +99,7 @@ namespace Streams.IO
                 return -1;
             }
 
-            var shift = 7 - this.ReadingPosition;
+            var shift = this.GetBitShift(this.ReadingPosition);
             var bitMask = 1 << shift;
             var bit = (this.ReadingByte & bitMask) >> shift;
             this.ReadingPosition++;
@@ -97,7 +121,7 @@ namespace Streams.IO
                     return bit;
                 }
 
-                var shift = 7 - i;
+                var shift = this.GetBitShift(i);
                 value |= bit << shift;
             }
 
@@ -125,7 +149,7 @@ namespace Streams.IO
 
         public void WriteBit(int bit)
         {
-            var shift = 7 - this.WritingPosition;
+            var shift = this.GetBitShift(this.WritingPosition);
             this.WritingByte |= bit << shift;
             this.WritingPosition++;
             this.OutBits++;
@@ -143,7 +167,7 @@ namespace Streams.IO
         {
             for (var i = 0; i < 8; i++)
             {
-                var shift = 7 - i;
+                var shift = this.GetBitShift(i);
                 var bitMask = 1 << shift;
                 var bit = (value & bitMask) >> shift;
                 this.WriteBit(bit);

@@ -13,31 +13,31 @@ namespace Streams.LZW
     {
         protected readonly BitStream BaseBitStream;
         protected readonly CompressionMode Mode;
-        
+
         public LZWProcessor Processor { get; private set; }
 
         protected int ReadingDataKey { get; private set; } = -1;
         protected IReadOnlyList<byte> ReadingData { get; private set; } = Array.Empty<byte>();
         protected int ReadingPosition { get; private set; } = 0;
 
-        public LZWStream(Stream baseStream, CompressionMode mode) : this(baseStream, mode, false)
+        public LZWStream(BitStream baseStream, CompressionMode mode) : this(baseStream, mode, false)
         {
 
         }
 
-        public LZWStream(Stream baseStream, CompressionMode mode, LZWProcessor processor) : this(baseStream, mode, processor, false)
+        public LZWStream(BitStream baseStream, CompressionMode mode, LZWProcessor processor) : this(baseStream, mode, processor, false)
         {
 
         }
 
-        public LZWStream(Stream baseStream, CompressionMode mode, bool leaveOpen) : this(baseStream, mode, new LZWProcessor(), leaveOpen)
+        public LZWStream(BitStream baseStream, CompressionMode mode, bool leaveOpen) : this(baseStream, mode, new LZWProcessor(), leaveOpen)
         {
 
         }
 
-        public LZWStream(Stream baseStream, CompressionMode mode, LZWProcessor processor, bool leaveOpen) : base(baseStream, leaveOpen)
+        public LZWStream(BitStream baseStream, CompressionMode mode, LZWProcessor processor, bool leaveOpen) : base(baseStream, leaveOpen)
         {
-            this.BaseBitStream = new BitStream(baseStream, leaveOpen);
+            this.BaseBitStream = baseStream;
             this.Mode = mode;
             this.Processor = processor;
 
@@ -66,10 +66,9 @@ namespace Streams.LZW
             this.Processor.ClearTable();
         }
 
-        protected virtual int GetUsingBits(int key)
-        {
-            return (int)Math.Ceiling(Math.Log2(key + 1));
-        }
+        public virtual int GetUsingBits(int key) => (int)Math.Ceiling(Math.Log2(key + 1));
+
+        public int GetBitShift(int bits, int position) => BitStream.GetBitShift(this.BaseBitStream.Order, bits, position);
 
         protected int ReadCode()
         {
@@ -85,9 +84,11 @@ namespace Streams.LZW
                 {
                     return this.Processor.EoiCode;
                 }
+                else
+                {
+                    code |= b << this.GetBitShift(bits, i);
+                }
 
-                var shift = bits - i - 1;
-                code |= b << shift;
             }
 
             return code;
