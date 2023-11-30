@@ -66,15 +66,9 @@ namespace Streams.Collections
 
         public bool ContainsB(B b) => this.B2A.ContainsKey(b);
 
-        public B this[A a]
-        {
-            get => this.GetB(a);
-        }
+        public B this[A a] => this.GetB(a);
 
-        public A this[B b]
-        {
-            get => this.GetA(b);
-        }
+        public A this[B b] => this.GetA(b);
 
         public B GetB(A a) => this.A2B[a];
 

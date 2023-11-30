@@ -50,18 +50,9 @@ namespace Streams.LZW
 
         public override int GetHashCode() => this.HashCode;
 
-        public bool Equals(LZWNode other)
-        {
-            if (other == null)
-            {
-                return false;
-            }
+        public override bool Equals(object obj) => obj is LZWNode other && this.Equals(other);
 
-            return this.Values.SequenceEqual(other.Values);
-        }
-
-        public override bool Equals(object obj) =>  obj is LZWNode other && this.Equals(other);
-
+        public bool Equals(LZWNode other) => other != null && this.Values.SequenceEqual(other.Values);
     }
 
 }

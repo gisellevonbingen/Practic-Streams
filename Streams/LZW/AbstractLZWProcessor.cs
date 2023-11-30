@@ -15,6 +15,10 @@ namespace Streams.LZW
         public BidirectionalDictionary<int, LZWNode> Table { get; }
         public int MinimumCodeLength { get; private set; }
         public int MaximumCodeLength { get; private set; }
+        /// <summary>
+        /// Exclusive
+        /// </summary>
+        public int MaximumCode { get; private set; }
 
         private LZWNode EncodeBuilder;
         public int ClearCode { get; private set; } = -1;
@@ -27,8 +31,12 @@ namespace Streams.LZW
         {
             this.MinimumCodeLength = minimumCodeLength;
             this.MaximumCodeLength = maximumCodeLength;
+            this.MaximumCode = 1 << minimumCodeLength;
             this.Table = new BidirectionalDictionary<int, LZWNode>();
             this.ClearTable();
+
+            this.ClearCode = this.MaximumCode + 0;
+            this.EoiCode = this.MaximumCode + 1;
         }
 
         public abstract int GetCodeLengthGrowThreashold(bool reading);
@@ -47,20 +55,15 @@ namespace Streams.LZW
             this.Table.Clear();
             this.EncodeBuilder = new LZWNode();
 
-            var maxExclusive = 1 << this.MinimumCodeLength;
-
-            for (int i = 0; i < maxExclusive; i++)
+            for (var i = 0; i < this.MaximumCode; i++)
             {
                 this.Table.Add(i, new LZWNode((byte)i));
             }
 
-            this.ClearCode = maxExclusive + 0;
-            this.EoiCode = maxExclusive + 1;
-            this.NextCode = maxExclusive + 2;
+            this.NextCode = this.MaximumCode + 2;
             this.LastCode = -1;
             this.CodeLength = this.MinimumCodeLength;
         }
-
 
         /// <summary>
         /// 
@@ -69,15 +72,15 @@ namespace Streams.LZW
         /// <returns>Table Key of Inserted values</returns>
         public int InsertToTable(LZWNode node)
         {
-            if (this.Table.TryGetA(node, out var prevKey) == false)
+            if (this.Table.TryGetA(node, out var prevCode) == false)
             {
-                var key = this.NextCode++;
-                this.Table.Add(key, node);
-                return key;
+                var code = this.NextCode++;
+                this.Table.Add(code, node);
+                return code;
             }
             else
             {
-                return prevKey;
+                return prevCode;
             }
 
         }
@@ -89,14 +92,14 @@ namespace Streams.LZW
         /// <returns>Table Key of Inserted value, -1 mean 'Require More Values'</returns>
         public int Encode(int value)
         {
-            var lastKey = this.LastCode;
+            var lastCode = this.LastCode;
 
             if (value <= -1)
             {
                 this.LastCode = -1;
                 this.NextCode++;
                 this.EncodeBuilder = new LZWNode();
-                return lastKey;
+                return lastCode;
             }
             else
             {
@@ -104,9 +107,9 @@ namespace Streams.LZW
                 var builder = this.EncodeBuilder;
                 builder.Add(byteValue);
 
-                if (this.Table.TryGetA(builder, out var key) == true)
+                if (this.Table.TryGetA(builder, out var code) == true)
                 {
-                    this.LastCode = key;
+                    this.LastCode = code;
                     return -1;
                 }
                 else
@@ -115,7 +118,7 @@ namespace Streams.LZW
                     this.EncodeBuilder = new LZWNode(byteValue);
 
                     this.LastCode = value;
-                    return lastKey;
+                    return lastCode;
                 }
 
             }
@@ -137,18 +140,19 @@ namespace Streams.LZW
             {
                 var table = this.Table;
                 var lastKey = this.LastCode;
+                var lasyNode = lastKey > -1 ? table[lastKey] : null;
                 var builder = new LZWNode();
 
-                if (lastKey > -1)
+                if (lasyNode != null)
                 {
-                    builder.AddRange(table[lastKey].Values);
+                    builder.AddRange(lasyNode.Values);
                 }
 
-                if (table.ContainsA(code) == true)
+                if (table.TryGetB(code, out var existing) == true)
                 {
-                    if (lastKey > -1)
+                    if (lasyNode != null)
                     {
-                        builder.Add(table[code].Values[0]);
+                        builder.Add(existing.Values[0]);
                         this.InsertToTable(builder);
                     }
 
@@ -157,10 +161,10 @@ namespace Streams.LZW
                 }
                 else
                 {
-                    builder.Add(table[lastKey].Values[0]);
-                    var key = this.InsertToTable(builder);
-                    this.LastCode = key;
-                    return key;
+                    builder.Add(lasyNode.Values[0]);
+                    var newCode = this.InsertToTable(builder);
+                    this.LastCode = newCode;
+                    return newCode;
                 }
 
             }
