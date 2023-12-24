@@ -9,23 +9,19 @@ namespace Streams.IO
 {
     public class BitStream : WrappedByteStream
     {
-        public static int GetBitShift(BitOrder order, int bits, int position)
+        public static int GetBitShift(bool isLittleEndian, int bits, int position)
         {
             if (0 > position || position > bits - 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(position));
             }
-            else if (order == BitOrder.BigEndian)
-            {
-                return bits - 1 - position;
-            }
-            else if (order == BitOrder.LittleEndian)
+            else if (isLittleEndian == true)
             {
                 return position;
             }
             else
             {
-                throw new ArgumentOutOfRangeException(nameof(order));
+                return bits - 1 - position;
             }
 
         }
@@ -36,20 +32,20 @@ namespace Streams.IO
         private int WritingByte = 0;
         private int WritingPosition = 0;
 
-        public BitOrder Order { get; private set; }
+        public bool IsLittleEndian { get; private set; }
         public long InBits { get; protected set; }
         public long InBytes { get; protected set; }
         public long OutBits { get; protected set; }
         public long OutBytes { get; protected set; }
 
-        public BitStream(Stream baseStream, BitOrder order) : this(baseStream, order, false)
+        public BitStream(Stream baseStream, bool isLittleEndian) : this(baseStream, isLittleEndian, false)
         {
 
         }
 
-        public BitStream(Stream baseStream, BitOrder order, bool leaveOpen) : base(baseStream, leaveOpen)
+        public BitStream(Stream baseStream, bool isLittleEndian, bool leaveOpen) : base(baseStream, leaveOpen)
         {
-            this.Order = order;
+            this.IsLittleEndian = isLittleEndian;
         }
 
         protected virtual int ReadEncodedByte(out int length)
@@ -77,7 +73,7 @@ namespace Streams.IO
 
         }
 
-        public int GetBitShift(int positionInByte) => GetBitShift(this.Order, 8, positionInByte);
+        public int GetBitShift(int positionInByte) => GetBitShift(this.IsLittleEndian, 8, positionInByte);
 
         public int ReadBit()
         {

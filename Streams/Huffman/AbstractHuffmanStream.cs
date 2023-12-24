@@ -10,12 +10,12 @@ namespace Streams.Huffman
 {
     public abstract class AbstractHuffmanStream : BitStream
     {
-        protected AbstractHuffmanStream(Stream baseStream) : base(baseStream, BitOrder.BigEndian)
+        protected AbstractHuffmanStream(Stream baseStream) : this(baseStream, false)
         {
 
         }
 
-        protected AbstractHuffmanStream(Stream baseStream, bool leaveOpen) : base(baseStream, BitOrder.BigEndian, leaveOpen)
+        protected AbstractHuffmanStream(Stream baseStream, bool leaveOpen) : base(baseStream, false, leaveOpen)
         {
 
         }

@@ -60,7 +60,7 @@ namespace Streams.LZW
 
         public int GetCodeBits() => Math.Min(this.GetCodeBitsUnclamped(), Processor.MaximumCodeLength);
 
-        public int GetBitShift(int bits, int position) => BitStream.GetBitShift(this.BaseBitStream.Order, bits, position);
+        public int GetBitShift(int bits, int position) => BitStream.GetBitShift(this.BaseBitStream.IsLittleEndian, bits, position);
 
         protected int ReadCode()
         {

@@ -50,12 +50,12 @@ namespace Streams.Base64
         private readonly Dictionary<char, byte> DecodeMap = Pairs().ToDictionary(pair => pair.Key, pair => pair.Value);
         private int Peek = -1;
 
-        public Base64Stream(Stream baseStream) : base(baseStream, BitOrder.BigEndian)
+        public Base64Stream(Stream baseStream) : this(baseStream, false)
         {
 
         }
 
-        public Base64Stream(Stream baseStream, bool leaveOpen) : base(baseStream, BitOrder.BigEndian, leaveOpen)
+        public Base64Stream(Stream baseStream, bool leaveOpen) : base(baseStream, false, leaveOpen)
         {
 
         }
