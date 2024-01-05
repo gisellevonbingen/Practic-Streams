@@ -15,7 +15,7 @@ namespace Streams.IO
 
         private readonly MemoryStream Memory;
 
-        public SiphonStream SiphonSteam { get; }
+        public SiphonStream SiphonStream { get; }
 
         public static SiphonBlock ByLength(Stream baseStream, long length)
         {
@@ -144,7 +144,7 @@ namespace Streams.IO
             this.Length = siphonStream.Length;
 
             this.Memory = null;
-            this.SiphonSteam = siphonStream;
+            this.SiphonStream = siphonStream;
         }
 
         private SiphonBlock(Stream baseStream, SiphonStream siphonStream, long origin, MemoryStream memoryStream) : this(baseStream, siphonStream, origin)
@@ -154,14 +154,14 @@ namespace Streams.IO
 
         public void SetBasePosition(long positionFromOrigin)
         {
-            this.SiphonSteam.Position = positionFromOrigin - this.Origin;
+            this.SiphonStream.Position = positionFromOrigin - this.Origin;
         }
 
         public long BaseEndPosition => this.Origin + this.Length;
 
         protected virtual void Dispose(bool disposing)
         {
-            this.SiphonSteam.Dispose();
+            this.SiphonStream.Dispose();
 
             if (this.Memory != null)
             {
