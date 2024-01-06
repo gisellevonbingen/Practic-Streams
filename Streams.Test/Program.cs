@@ -16,6 +16,24 @@ namespace Streams
     {
         public static void Main()
         {
+            var readTest = new MemoryStream(new byte[] { 0x00, 0x51, 0xFC });
+            var readStream = new BitStream(readTest, true);
+            var writeTest = new MemoryStream();
+            var writeStream = new BitStream(writeTest, true);
+
+            for (var i = 0; ;i++)
+            {
+                var bit = readStream.ReadBit();
+                Console.WriteLine($"{i} - {bit}");
+                writeStream.WriteBit(bit);
+
+                if (bit == -1)
+                {
+                    return;
+                }
+
+            }
+
             var texts = new List<string>()
             {
                 "Hello, World!\r\n안녕하세요!",

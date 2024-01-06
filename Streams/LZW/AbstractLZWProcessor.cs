@@ -39,6 +39,10 @@ namespace Streams.LZW
             this.EoiCode = this.MaximumCode + 1;
         }
 
+        public virtual int GetCodeBitsUnclamped() => this.CodeLength + 1;
+
+        public int GetCodeBits() => Math.Min(this.GetCodeBitsUnclamped(), this.MaximumCodeLength);
+
         public abstract int GetCodeLengthGrowThreashold(bool reading);
 
         public void GrowCodeLength(bool reading)

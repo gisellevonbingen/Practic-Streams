@@ -56,16 +56,12 @@ namespace Streams.LZW
             this.Processor.ClearTable();
         }
 
-        public virtual int GetCodeBitsUnclamped() => this.Processor.CodeLength + 1;
-
-        public int GetCodeBits() => Math.Min(this.GetCodeBitsUnclamped(), Processor.MaximumCodeLength);
-
         public int GetBitShift(int bits, int position) => BitStream.GetBitShift(this.BaseBitStream.IsLittleEndian, bits, position);
 
         protected int ReadCode()
         {
             this.Processor.GrowCodeLength(true);
-            var bits = this.GetCodeBits();
+            var bits = this.Processor.GetCodeBits();
             var code = 0;
 
             for (var i = 0; i < bits; i++)
@@ -89,7 +85,7 @@ namespace Streams.LZW
         protected void WriteCode(int code)
         {
             this.Processor.GrowCodeLength(false);
-            var bits = this.GetCodeBits();
+            var bits = this.Processor.GetCodeBits();
 
             for (var i = 0; i < bits; i++)
             {
@@ -151,7 +147,7 @@ namespace Streams.LZW
 
         public override void WriteByte(byte value)
         {
-            if (this.GetCodeBitsUnclamped() >= this.Processor.MaximumCodeLength)
+            if (this.Processor.GetCodeBitsUnclamped() >= this.Processor.MaximumCodeLength)
             {
                 this.WriteClearCode();
             }

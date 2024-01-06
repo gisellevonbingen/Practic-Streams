@@ -141,7 +141,7 @@ namespace Streams.IO
             return count;
         }
 
-        public void WriteBit(bool bit) => this.WriteBit(bit ? 1 : 0);
+        public void WriteBit(bool bit) => this.WriteBit(Convert.ToInt32(bit));
 
         public void WriteBit(int bit)
         {
