@@ -45,17 +45,6 @@ namespace Streams.IO
 
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-
-            if (this.LeaveOpen == false)
-            {
-                this.BaseStream.Dispose();
-            }
-
-        }
-
     }
 
 }
