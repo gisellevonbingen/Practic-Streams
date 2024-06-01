@@ -144,17 +144,17 @@ namespace Streams.LZW
             {
                 var table = this.Table;
                 var lastKey = this.LastCode;
-                var lasyNode = lastKey > -1 ? table[lastKey] : null;
+                var lastNode = lastKey > -1 ? table[lastKey] : null;
                 var builder = new LZWNode();
 
-                if (lasyNode != null)
+                if (lastNode != null)
                 {
-                    builder.AddRange(lasyNode.Values);
+                    builder.AddRange(lastNode.Values);
                 }
 
                 if (table.TryGetB(code, out var existing) == true)
                 {
-                    if (lasyNode != null)
+                    if (lastNode != null)
                     {
                         builder.Add(existing.Values[0]);
                         this.InsertToTable(builder);
@@ -165,7 +165,7 @@ namespace Streams.LZW
                 }
                 else
                 {
-                    builder.Add(lasyNode.Values[0]);
+                    builder.Add(lastNode.Values[0]);
                     var newCode = this.InsertToTable(builder);
                     this.LastCode = newCode;
                     return newCode;
